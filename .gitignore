@@ -1,0 +1,9 @@
+.*
+/env.json
+/dist
+/build
+/bak
+/sdk
+/ide
+/pub
+go.sum
