@@ -37,13 +37,13 @@ func init() {
 	_ = config.LoadConfig("start", &conf)
 }
 
-func getGolangList(request *http.Request) (out struct {
+func getGolangList(request *http.Request, logger *log.Logger) (out struct {
 	Sdk     []sdkInfo
 	Ide     []ideInfo
 	BaseUrl string
 }) {
-	out.Sdk = getSDKList()
-	out.Ide = getIDEList()
+	out.Sdk = getSDKList(logger)
+	out.Ide = getIDEList(logger)
 	if conf.Production {
 		out.BaseUrl = fmt.Sprint(u.StringIf(request.TLS == nil, "http", "https"), "://", request.Header.Get(standard.DiscoverHeaderHost), "/")
 	}else{
@@ -52,7 +52,7 @@ func getGolangList(request *http.Request) (out struct {
 	return
 }
 
-func getSDKList() []sdkInfo {
+func getSDKList(logger *log.Logger) []sdkInfo {
 	list := make([]sdkInfo, 0)
 	lines := make([]string, 0)
 	if conf.Production {
@@ -63,7 +63,7 @@ func getSDKList() []sdkInfo {
 	} else {
 		files, err := ioutil.ReadDir("./sdk")
 		if err != nil {
-			log.Error("Start", "error", err)
+			logger.Error(err.Error())
 			return list
 		}
 		for _, file := range files {
@@ -90,16 +90,16 @@ func getSDKList() []sdkInfo {
 func makeCachedSDKList() {
 	listResult := httpclient.GetClient(10 * time.Second).Get("http://ssgo.isstar.com/gosdk/list").String()
 	lines := strings.Split(strings.TrimSpace(listResult), "\n")
-	u.Save(os.TempDir()+"gosdk.list", &lines)
+	_ = u.Save(os.TempDir()+"gosdk.list", &lines)
 }
 
 func makeCachedIDEList() {
 	listResult := httpclient.GetClient(10 * time.Second).Get("http://ssgo.isstar.com/goide/list").String()
 	lines := strings.Split(strings.TrimSpace(listResult), "\n")
-	u.Save(os.TempDir()+"goide.list", &lines)
+	_ = u.Save(os.TempDir()+"goide.list", &lines)
 }
 
-func getIDEList() []ideInfo {
+func getIDEList(logger *log.Logger) []ideInfo {
 	list := make([]ideInfo, 0)
 	lines := make([]string, 0)
 	if conf.Production {
@@ -110,7 +110,7 @@ func getIDEList() []ideInfo {
 	} else {
 		files, err := ioutil.ReadDir("./ide")
 		if err != nil {
-			log.Error("Start", "error", err)
+			logger.Error(err.Error())
 			return list
 		}
 		for _, file := range files {
@@ -127,8 +127,8 @@ func getIDEList() []ideInfo {
 	return list
 }
 
-func getSDKInstaller(in struct{ Index int }, request *http.Request) string {
-	list := getSDKList()
+func getSDKInstaller(in struct{ Index int }, logger *log.Logger) string {
+	list := getSDKList(logger)
 	if in.Index >= 0 && in.Index < len(list) {
 		item := list[in.Index]
 
